@@ -9,23 +9,25 @@ exports.getPosts = async (req, res, next) => {
   try {
     const page = req.query.page || 1;
     const items_per_page = 3;
-    let totalItems;
+    let totalItems = 0;
     const count = await Post.countDocuments();
 
     if (count) {
       totalItems = count;
-      const posts = await Post.find()
-        .skip(page - 1)
-        .limit(items_per_page);
-      if (!posts) {
-        throwError("No Posts Found", 404);
-      }
-      res.status(200).json({
-        message: "Post fetched successfully",
-        posts: posts,
-        totalItems: totalItems,
-      });
     }
+    const posts = await Post.find()
+      .populate("creator")
+      .skip(page - 1)
+      .limit(items_per_page);
+    if (!posts) {
+      throwError("No Posts Found", 404);
+    }
+    console.log(posts);
+    res.status(200).json({
+      message: "Post fetched successfully",
+      posts: posts,
+      totalItems: totalItems,
+    });
   } catch (errors) {
     errorHandler(errors, next);
   }

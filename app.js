@@ -8,6 +8,7 @@ const path = require("path");
 const PASSWORD = require("./utils/password").mongoPassword;
 const feedRoutes = require("./routes/feed");
 const authRoutes = require("./routes/auth");
+const statusRoutes = require("./routes/status");
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use((req, res, next) => {
 
 app.use("/feeds", feedRoutes);
 app.use("/auth", authRoutes);
+app.use("/status", statusRoutes);
 
 app.use((errors, req, res, next) => {
   console.log("ERRORS ⚠️", errors);
