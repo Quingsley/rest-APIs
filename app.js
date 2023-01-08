@@ -71,9 +71,11 @@ async function main() {
       `mongodb+srv://quingsley:${PASSWORD}@cluster0.hkxyhxj.mongodb.net/messages?retryWrites=true`
     );
     if (connect) {
-      app.listen(8080, () =>
-        console.log("Server Running at http://localhost:8080")
+      const server = app.listen("8080", () =>
+        console.log("Sever running at http://localhost:8080")
       );
+      const io = require("./socket").init(server);
+      io.on("connection", (socket) => console.log("a user connected"));
     }
   } catch (errors) {
     console.log(errors);

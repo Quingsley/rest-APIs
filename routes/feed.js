@@ -21,6 +21,7 @@ router.post(
 router.get("/post/:postId", isAuth, feedController.getSinglePost);
 router.put(
   "/post/:postId",
+  isAuth,
   [
     body("title").trim().isLength({ min: 5 }),
     body("content").trim().isLength({ min: 5, max: 200 }),

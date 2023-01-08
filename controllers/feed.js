@@ -4,11 +4,12 @@ const User = require("../models/user");
 const errorHandler = require("../utils/error-handler").errorHandler;
 const throwError = require("../utils/error-handler").throwError;
 const clearImage = require("../utils/clear-image");
+const io = require("../socket");
 
 exports.getPosts = async (req, res, next) => {
   try {
     const page = req.query.page || 1;
-    const items_per_page = 3;
+    const items_per_page = 2;
     let totalItems = 0;
     const count = await Post.countDocuments();
 
@@ -17,12 +18,13 @@ exports.getPosts = async (req, res, next) => {
     }
     const posts = await Post.find()
       .populate("creator")
-      .skip(page - 1)
-      .limit(items_per_page);
+      .skip((page - 1) * items_per_page)
+      .limit(items_per_page)
+      .sort({ createdAt: -1 });
     if (!posts) {
       throwError("No Posts Found", 404);
     }
-    console.log(posts);
+    // console.log(posts);
     res.status(200).json({
       message: "Post fetched successfully",
       posts: posts,
@@ -59,6 +61,10 @@ exports.createPost = async (req, res, next) => {
       user.posts.push(post);
       const data = await user.save();
       if (data) {
+        io.getIO().emit("posts", {
+          actions: "create-post",
+          post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
+        });
         res.status(201).json({
           message: "Post created Successfully",
           post: createdPost,
@@ -104,7 +110,7 @@ exports.updatePost = async (req, res, next) => {
       throwError("No file picked", 422);
     }
 
-    const existingPost = await Post.findById(postId);
+    const existingPost = await Post.findById(postId).populate("creator");
     if (!existingPost) {
       throwError("No Post found", 404);
     }
@@ -113,13 +119,14 @@ exports.updatePost = async (req, res, next) => {
       clearImage(existingPost.imageUrl);
     }
 
-    if (existingPost.creator.toString() !== req.userId) {
-      throwError("Not authorized", 403);
+    if (existingPost.creator._id.toString() !== req.userId) {
+      throwError("Not authorized!", 403);
     }
     existingPost.title = title;
     existingPost.content = content;
     existingPost.imageUrl = imageUrl;
     const result = await existingPost.save();
+    io.getIO().emit("posts", { actions: "update", post: result });
     res.status(200).json({
       message: "Post updated Successfully",
       post: result,
@@ -146,6 +153,7 @@ exports.deletePost = async (req, res, next) => {
       if (user) {
         user.posts.pull(postId);
         const result = await user.save();
+        io.getIO().emit("posts", { actions: "delete", post: postId });
         if (result) {
           res.status(200).json({
             message: "Post deleted successfully",
