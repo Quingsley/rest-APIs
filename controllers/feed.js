@@ -70,6 +70,7 @@ exports.createPost = async (req, res, next) => {
           post: createdPost,
           creator: data._id,
         });
+        return data;
       }
     }
   } catch (errors) {
